@@ -1,0 +1,90 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeskyDev - Solo Game Developer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+</head>
+<body>
+    <header>
+        <h1>PeskyDev</h1>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#blog">Blog</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header><section id="home">
+    <h2>Welcome to PeskyDev</h2>
+    <p>Hi, I'm a solo game developer creating unique experiences. Check out my latest work below!</p>
+</section>
+
+<section id="projects">
+    <h2>My Projects</h2>
+    <div class="project-list">
+        <div class="project">
+            <h3>Game Title 1</h3>
+            <p>Description of the game.</p>
+        </div>
+        <div class="project">
+            <h3>Game Title 2</h3>
+            <p>Description of the game.</p>
+        </div>
+    </div>
+</section>
+
+<section id="blog">
+    <h2>Developer Blog</h2>
+    <div id="blog-posts"></div>
+    <h3>Write a New Blog Post</h3>
+    <textarea id="editor"></textarea>
+    <button onclick="publishPost()">Publish</button>
+</section>
+
+<section id="contact">
+    <h2>Contact Me</h2>
+    <p>Email: <a href="mailto:largefort@gmail.com">largefort@gmail.com</a></p>
+</section>
+
+<footer>
+    <p>&copy; 2025 PeskyDev. All rights reserved.</p>
+</footer>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const easyMDE = new EasyMDE({ element: document.getElementById("editor") });
+        const converter = new showdown.Converter();
+        
+        function fetchBlogPosts() {
+            fetch("https://your-strapi-url.com/api/blogs")
+                .then(response => response.json())
+                .then(data => {
+                    const blogContainer = document.getElementById("blog-posts");
+                    blogContainer.innerHTML = "";
+                    data.forEach(post => {
+                        const htmlContent = converter.makeHtml(post.content);
+                        blogContainer.innerHTML += `<div class='blog-post'><h3>${post.title}</h3>${htmlContent}</div>`;
+                    });
+                });
+        }
+        
+        function publishPost() {
+            const content = easyMDE.value();
+            fetch("https://your-strapi-url.com/api/blogs", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: "New Post", content: content })
+            }).then(() => fetchBlogPosts());
+        }
+        
+        fetchBlogPosts();
+    });
+</script>
+
+</body>
+</html>
