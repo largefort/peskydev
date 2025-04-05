@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import { blogPosts } from './blog.js';
+import { profileIcons, profileThemes, profileBadges } from './profile.js';
 
 const app = createApp({
     data() {
@@ -59,23 +60,39 @@ const app = createApp({
                     graphics: 'DirectX 11 compatible GPU with 1GB VRAM',
                     storage: '500 MB available space'
                 }
-            }
+            },
+            profileTab: 'customize',
+            profileIcons: profileIcons,
+            profileThemes: profileThemes,
+            profileBadges: profileBadges,
+            selectedIcon: 'default',
+            selectedTheme: 'default',
+            customFields: {
+                bio: '',
+                location: '',
+                website: '',
+                favoriteGame: '',
+            },
+            showUsernameEdit: false,
+            newUsername: '',
+            userActivities: []
         };
     },
     created() {
-        // Load data from localStorage
         this.loadUsers();
         this.loadPosts();
         this.loadSuggestions();
         this.checkAuthentication();
         
-        // Initialize gallery when available
         if (window.peskydevGallery) {
             this.galleryItems = window.peskydevGallery.items;
         }
+        
+        if (this.isLoggedIn && this.currentUser) {
+            this.loadProfileData();
+        }
     },
     methods: {
-        // Authentication methods
         loadUsers() {
             const storedUsers = localStorage.getItem('peskydev_users');
             if (storedUsers) {
@@ -95,13 +112,11 @@ const app = createApp({
         login() {
             this.loginError = null;
             
-            // Basic validation
             if (!this.loginForm.username || !this.loginForm.password) {
                 this.loginError = 'Please enter both username and password.';
                 return;
             }
             
-            // Find user
             const user = this.users.find(u => 
                 u.username.toLowerCase() === this.loginForm.username.toLowerCase() && 
                 u.password === this.loginForm.password
@@ -119,8 +134,9 @@ const app = createApp({
                 this.showLoginModal = false;
                 this.loginForm = { username: '', password: '' };
                 
-                // Load user-specific data
                 this.loadUserVotes();
+                this.addUserActivity('login', 'Logged in to account');
+                this.loadProfileData();
             } else {
                 this.loginError = 'Invalid username or password.';
             }
@@ -128,7 +144,6 @@ const app = createApp({
         register() {
             this.registerError = null;
             
-            // Basic validation
             if (!this.registerForm.username || !this.registerForm.email || 
                 !this.registerForm.password || !this.registerForm.confirmPassword) {
                 this.registerError = 'Please fill in all fields.';
@@ -140,13 +155,11 @@ const app = createApp({
                 return;
             }
             
-            // Check if username already exists
             if (this.users.some(u => u.username.toLowerCase() === this.registerForm.username.toLowerCase())) {
                 this.registerError = 'Username already taken.';
                 return;
             }
             
-            // Create new user
             const newUser = {
                 id: Date.now().toString(),
                 username: this.registerForm.username,
@@ -170,22 +183,38 @@ const app = createApp({
             this.showRegisterModal = false;
             this.registerForm = { username: '', email: '', password: '', confirmPassword: '' };
             
-            // Initialize user data
             localStorage.setItem(`peskydev_votes_${userInfo.id}`, JSON.stringify([]));
             this.userVotes = [];
+            
+            localStorage.setItem(`peskydev_profile_${newUser.id}`, JSON.stringify({
+                icon: 'default',
+                theme: 'default',
+                fields: {
+                    bio: '',
+                    location: '',
+                    website: '',
+                    favoriteGame: ''
+                }
+            }));
+            
+            const firstActivity = {
+                id: Date.now().toString(),
+                type: 'login',
+                description: 'Created account and logged in',
+                date: new Date().toISOString()
+            };
+            localStorage.setItem(`peskydev_activities_${newUser.id}`, JSON.stringify([firstActivity]));
+            this.userActivities = [firstActivity];
         },
         logout() {
             localStorage.removeItem('peskydev_current_user');
             this.currentUser = null;
             this.isLoggedIn = false;
             
-            // If on members page, redirect to home
             if (this.currentPage === 'members') {
                 this.currentPage = 'home';
             }
         },
-        
-        // Forum methods
         loadPosts() {
             const storedPosts = localStorage.getItem('peskydev_forum_posts');
             if (storedPosts) {
@@ -214,8 +243,8 @@ const app = createApp({
             this.forumPosts.unshift(post);
             this.savePosts();
             
-            // Reset form
             this.newPost = { title: '', content: '' };
+            this.addUserActivity('forum_post', `Created forum post: ${this.newPost.title}`);
         },
         addReply(postId) {
             const content = this.replyContent[postId];
@@ -237,31 +266,25 @@ const app = createApp({
                 post.replies.push(reply);
                 this.savePosts();
                 
-                // Reset reply form
                 this.$set(this.replyContent, postId, '');
+                this.addUserActivity('forum_reply', `Replied to a forum post`);
             }
         },
-        
-        // Feedback methods
         submitFeedback() {
             if (!this.feedback.title || !this.feedback.content) {
                 alert('Please fill in all fields.');
                 return;
             }
             
-            // In a real app, this would send an email or API request
-            // For this demo, we'll simulate it
             alert(`Feedback submitted! A message has been sent to support@peskydev.com\n\nSubject: ${this.feedback.title}\nType: ${this.feedback.type}\nMessage: ${this.feedback.content}`);
             
-            // Reset form
             this.feedback = {
                 title: '',
                 type: 'improvement',
                 content: ''
             };
+            this.addUserActivity('feedback', `Submitted feedback: ${this.feedback.title}`);
         },
-        
-        // Game suggestions methods
         loadSuggestions() {
             const storedSuggestions = localStorage.getItem('peskydev_game_suggestions');
             if (storedSuggestions) {
@@ -292,7 +315,6 @@ const app = createApp({
                 return;
             }
             
-            // Format game name for display
             let displayGameName = this.suggestion.game;
             if (displayGameName === 'pixel-adventure') {
                 displayGameName = 'Pixel Adventure';
@@ -316,12 +338,12 @@ const app = createApp({
             this.gameSuggestions.unshift(suggestion);
             this.saveSuggestions();
             
-            // Reset form
             this.suggestion = {
                 game: this.suggestion.game,
                 title: '',
                 description: ''
             };
+            this.addUserActivity('suggestion', `Suggested new feature: ${this.suggestion.title}`);
         },
         upvoteSuggestion(suggestionId) {
             if (this.hasVoted(suggestionId)) {
@@ -340,12 +362,9 @@ const app = createApp({
         hasVoted(suggestionId) {
             return this.userVotes.includes(suggestionId);
         },
-        
-        // New blog methods
         viewBlogPost(postId) {
             this.currentBlogPost = this.blogPosts.find(post => post.id === postId);
         },
-        
         addBlogComment() {
             if (!this.newComment.trim() || !this.isLoggedIn || !this.currentBlogPost) {
                 return;
@@ -357,27 +376,164 @@ const app = createApp({
                 content: this.newComment
             });
             
-            // In a real app, we would save this to a database
             this.newComment = '';
         },
-        
-        // Game demo download methods
         trackDownload() {
             this.downloadableDemo.downloadCount++;
-            // In a real app, this would be saved server-side
             alert(`Thank you for downloading the ${this.downloadableDemo.name}! The download should start automatically.`);
-            
-            // For demo purposes, we're not actually downloading anything
-            // In a real app, this would redirect to the download URL
         },
-        
-        // Gallery methods
         toggleGalleryView() {
             this.showGallery = !this.showGallery;
             if (this.showGallery && window.peskydevGallery) {
                 window.peskydevGallery.init();
             }
-        }
+        },
+        loadProfileData() {
+            const profileData = localStorage.getItem(`peskydev_profile_${this.currentUser.id}`);
+            if (profileData) {
+                const data = JSON.parse(profileData);
+                this.selectedIcon = data.icon || 'default';
+                this.selectedTheme = data.theme || 'default';
+                this.customFields = data.fields || {
+                    bio: '',
+                    location: '',
+                    website: '',
+                    favoriteGame: ''
+                };
+                
+                if (data.theme) {
+                    this.applyTheme(data.theme);
+                }
+                
+                this.loadUserActivities();
+            }
+        },
+        saveProfileData() {
+            if (!this.isLoggedIn || !this.currentUser) return;
+            
+            const profileData = {
+                icon: this.selectedIcon,
+                theme: this.selectedTheme,
+                fields: this.customFields
+            };
+            
+            localStorage.setItem(`peskydev_profile_${this.currentUser.id}`, JSON.stringify(profileData));
+            
+            this.addUserActivity('profile_update', 'Updated profile settings');
+            
+            this.applyTheme(this.selectedTheme);
+            
+            alert('Profile settings saved successfully!');
+        },
+        selectIcon(iconId) {
+            this.selectedIcon = iconId;
+        },
+        selectTheme(themeId) {
+            this.selectedTheme = themeId;
+        },
+        applyTheme(themeId) {
+            const theme = this.profileThemes.find(t => t.id === themeId);
+            if (!theme) return;
+            
+            document.documentElement.style.setProperty('--primary-color', theme.primary);
+            document.documentElement.style.setProperty('--primary-dark', theme.secondary);
+            document.documentElement.style.setProperty('--primary-light', this.getLighterColor(theme.primary));
+        },
+        getLighterColor(hexColor) {
+            const r = parseInt(hexColor.slice(1, 3), 16);
+            const g = parseInt(hexColor.slice(3, 5), 16);
+            const b = parseInt(hexColor.slice(5, 7), 16);
+            
+            const lighterR = Math.min(255, r + 40);
+            const lighterG = Math.min(255, g + 40);
+            const lighterB = Math.min(255, b + 40);
+            
+            return `#${lighterR.toString(16).padStart(2, '0')}${lighterG.toString(16).padStart(2, '0')}${lighterB.toString(16).padStart(2, '0')}`;
+        },
+        editUsername() {
+            this.showUsernameEdit = true;
+            this.newUsername = this.currentUser.username;
+        },
+        saveUsername() {
+            if (!this.newUsername.trim()) {
+                alert('Username cannot be empty');
+                return;
+            }
+            
+            if (this.users.some(u => u.id !== this.currentUser.id && u.username.toLowerCase() === this.newUsername.toLowerCase())) {
+                alert('Username already taken');
+                return;
+            }
+            
+            const userIndex = this.users.findIndex(u => u.id === this.currentUser.id);
+            if (userIndex !== -1) {
+                this.users[userIndex].username = this.newUsername;
+                this.saveUsers();
+                
+                this.currentUser.username = this.newUsername;
+                localStorage.setItem('peskydev_current_user', JSON.stringify(this.currentUser));
+                
+                this.addUserActivity('username_change', 'Changed username');
+                
+                this.showUsernameEdit = false;
+            }
+        },
+        cancelUsernameEdit() {
+            this.showUsernameEdit = false;
+        },
+        loadUserActivities() {
+            const activities = localStorage.getItem(`peskydev_activities_${this.currentUser.id}`);
+            if (activities) {
+                this.userActivities = JSON.parse(activities);
+            } else {
+                this.userActivities = [];
+            }
+        },
+        addUserActivity(type, description) {
+            const activity = {
+                id: Date.now().toString(),
+                type: type,
+                description: description,
+                date: new Date().toISOString()
+            };
+            
+            this.userActivities.unshift(activity);
+            
+            if (this.userActivities.length > 20) {
+                this.userActivities = this.userActivities.slice(0, 20);
+            }
+            
+            localStorage.setItem(`peskydev_activities_${this.currentUser.id}`, JSON.stringify(this.userActivities));
+        },
+        formatActivityDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            
+            const diffInMs = now - date;
+            const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+            
+            if (diffInDays === 0) {
+                return 'Today';
+            } else if (diffInDays === 1) {
+                return 'Yesterday';
+            } else if (diffInDays < 7) {
+                return `${diffInDays} days ago`;
+            } else {
+                return date.toLocaleDateString();
+            }
+        },
+        getActivityIcon(type) {
+            switch(type) {
+                case 'profile_update': return '⚙️';
+                case 'username_change': return '📝';
+                case 'forum_post': return '💬';
+                case 'forum_reply': return '↩️';
+                case 'suggestion': return '💡';
+                case 'feedback': return '📢';
+                case 'login': return '🔑';
+                default: return '📌';
+            }
+        },
     }
 });
 

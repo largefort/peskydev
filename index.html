@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PeskyDev - Solo Game Developer</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="profile.css">
     <script type="importmap">
     {
         "imports": {
@@ -14,6 +15,7 @@
     <script type="module" src="games.js" defer></script>
     <script type="module" src="blog.js" defer></script>
     <script type="module" src="gallery.js" defer></script>
+    <script type="module" src="profile.js" defer></script>
 </head>
 <body>
     <div id="app">
@@ -117,6 +119,7 @@
                         <button :class="{ 'active': activeTab === 'forum' }" @click="activeTab = 'forum'">Forum</button>
                         <button :class="{ 'active': activeTab === 'feedback' }" @click="activeTab = 'feedback'">Feedback</button>
                         <button :class="{ 'active': activeTab === 'suggestions' }" @click="activeTab = 'suggestions'">Game Suggestions</button>
+                        <button :class="{ 'active': activeTab === 'profile' }" @click="activeTab = 'profile'">My Profile</button>
                     </div>
                     
                     <!-- Forum Tab -->
@@ -205,9 +208,160 @@
                                 <div class="suggestion-desc">{{ sugg.description }}</div>
                                 <div class="suggestion-votes">
                                     <button @click="upvoteSuggestion(sugg.id)" :disabled="hasVoted(sugg.id)">
-                                        👍 {{ sugg.upvotes }}
+                                        
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Tab -->
+                    <div v-if="activeTab === 'profile'" class="profile-section">
+                        <h3>My Profile</h3>
+                        
+                        <div class="profile-header">
+                            <div class="profile-avatar">
+                                <div v-html="profileIcons.find(i => i.id === selectedIcon).svg"></div>
+                                <div class="profile-avatar-overlay" @click="profileTab = 'customize'">
+                                    <span>Change</span>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-info">
+                                <div class="profile-username">
+                                    <span v-if="!showUsernameEdit">{{ currentUser.username }}</span>
+                                    <input v-if="showUsernameEdit" v-model="newUsername" type="text">
+                                    
+                                    <button v-if="!showUsernameEdit" @click="editUsername" class="profile-edit-username">
+                                        
+                                    </button>
+                                    
+                                    <div v-if="showUsernameEdit">
+                                        <button @click="saveUsername">Save</button>
+                                        <button @click="cancelUsernameEdit">Cancel</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="profile-stats">
+                                    <div class="profile-stat">
+                                        <span>Posts:</span>
+                                        <span>{{ forumPosts.filter(p => p.authorId === currentUser.id).length }}</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span>Suggestions:</span>
+                                        <span>{{ gameSuggestions.filter(s => s.authorId === currentUser.id).length }}</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span>Joined:</span>
+                                        <span>{{ new Date(users.find(u => u.id === currentUser.id).dateJoined).toLocaleDateString() }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="profile-badges">
+                                    <div class="profile-badge" v-if="userActivities.some(a => a.type === 'login' && a.description.includes('Created account'))">
+                                        
+                                        <span>New Member</span>
+                                    </div>
+                                    <div class="profile-badge" v-if="forumPosts.filter(p => p.authorId === currentUser.id).length >= 5">
+                                        
+                                        <span>Forum Contributor</span>
+                                    </div>
+                                    <div class="profile-badge" v-if="userActivities.some(a => a.type === 'feedback')">
+                                        
+                                        <span>Feedback Provider</span>
+                                    </div>
+                                    <div class="profile-badge" v-if="gameSuggestions.filter(s => s.authorId === currentUser.id).length >= 3">
+                                        
+                                        <span>Idea Generator</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-tabs">
+                            <div :class="['profile-tab', { active: profileTab === 'customize' }]" @click="profileTab = 'customize'">
+                                Customize Profile
+                            </div>
+                            <div :class="['profile-tab', { active: profileTab === 'activity' }]" @click="profileTab = 'activity'">
+                                Activity History
+                            </div>
+                        </div>
+                        
+                        <!-- Customization Tab -->
+                        <div v-if="profileTab === 'customize'">
+                            <div class="avatar-selector">
+                                <h4>Select Profile Icon</h4>
+                                <div class="avatar-grid">
+                                    <div 
+                                        v-for="icon in profileIcons" 
+                                        :key="icon.id" 
+                                        :class="['avatar-option', { selected: selectedIcon === icon.id }]" 
+                                        @click="selectIcon(icon.id)"
+                                    >
+                                        <div v-html="icon.svg"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="theme-selector">
+                                <h4>Select Color Theme</h4>
+                                <div class="theme-grid">
+                                    <div 
+                                        v-for="theme in profileThemes" 
+                                        :key="theme.id" 
+                                        :class="['theme-option', { selected: selectedTheme === theme.id }]" 
+                                        @click="selectTheme(theme.id)"
+                                    >
+                                        <div class="theme-colors">
+                                            <div class="theme-color" :style="{ backgroundColor: theme.primary }"></div>
+                                            <div class="theme-color" :style="{ backgroundColor: theme.secondary }"></div>
+                                        </div>
+                                        <div class="theme-name">{{ theme.name }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="custom-fields">
+                                <h4>Profile Information</h4>
+                                <div class="custom-field">
+                                    <label for="profile-bio">Bio</label>
+                                    <textarea id="profile-bio" v-model="customFields.bio" placeholder="Tell us about yourself..."></textarea>
+                                </div>
+                                <div class="custom-field">
+                                    <label for="profile-location">Location</label>
+                                    <input id="profile-location" type="text" v-model="customFields.location" placeholder="Your location (optional)">
+                                </div>
+                                <div class="custom-field">
+                                    <label for="profile-website">Website</label>
+                                    <input id="profile-website" type="text" v-model="customFields.website" placeholder="Your website (optional)">
+                                </div>
+                                <div class="custom-field">
+                                    <label for="profile-game">Favorite Game</label>
+                                    <input id="profile-game" type="text" v-model="customFields.favoriteGame" placeholder="Your favorite game">
+                                </div>
+                            </div>
+                            
+                            <button @click="saveProfileData" class="save-profile">Save Profile</button>
+                        </div>
+                        
+                        <!-- Activity History Tab -->
+                        <div v-if="profileTab === 'activity'" class="profile-activity">
+                            <h4>Recent Activity</h4>
+                            
+                            <div class="activity-list" v-if="userActivities.length > 0">
+                                <div class="activity-item" v-for="activity in userActivities" :key="activity.id">
+                                    <div class="activity-icon">
+                                        {{ getActivityIcon(activity.type) }}
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-title">{{ activity.description }}</div>
+                                        <div class="activity-date">{{ formatActivityDate(activity.date) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div v-else class="empty-state">
+                                No activity recorded yet.
                             </div>
                         </div>
                     </div>
@@ -279,7 +433,7 @@
                 <div class="footer-links">
                     <a href="#">Privacy Policy</a>
                     <a href="#">Terms of Service</a>
-                    <a href="/cdn-cgi/l/email-protection#0a797f7a7a65787e4a7a6f7961736e6f7c24696567">Contact</a>
+                    <a href="/cdn-cgi/l/email-protection#8af9fffafae5f8fecafaeff9e1f3eeeffca4e9e5e7">Contact</a>
                 </div>
                 <div class="social-links">
                     <a href="#" class="social-icon">
@@ -300,7 +454,7 @@
                 </div>
             </div>
             <div class="copyright">
-                &copy; 2023 PeskyDev. All rights reserved.
+                2023 PeskyDev. All rights reserved.
             </div>
         </footer>
     </div>
