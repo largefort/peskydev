@@ -1,90 +1,310 @@
-<!DOCTYPE html><html lang="en">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PeskyDev - Solo Game Developer</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+        }
+    }
+    </script>
+    <script type="module" src="games.js" defer></script>
+    <script type="module" src="blog.js" defer></script>
+    <script type="module" src="gallery.js" defer></script>
 </head>
 <body>
-    <header>
-        <h1>PeskyDev</h1>
-        <nav>
-            <ul>
-                <li><a href="#home">Home</a></li>
-                <li><a href="#projects">Projects</a></li>
-                <li><a href="#blog">Blog</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
-    </header><section id="home">
-    <h2>Welcome to PeskyDev</h2>
-    <p>Hi, I'm a solo game developer creating unique experiences. Check out my latest work below!</p>
-</section>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40">
+                    <path d="M20 5L30 10L30 20L20 25L10 20L10 10L20 5Z" fill="#7289da" />
+                    <path d="M20 5L30 10L20 15L10 10L20 5Z" fill="#9baae8" />
+                    <circle cx="20" cy="15" r="3" fill="#ffffff" />
+                    <rect x="16" y="20" width="8" height="8" rx="2" fill="#ffffff" />
+                </svg>
+                <h1>PeskyDev</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" @click.prevent="currentPage = 'home'">Home</a></li>
+                    <li><a href="#" @click.prevent="currentPage = 'games'">Games</a></li>
+                    <li><a href="#" @click.prevent="currentPage = 'about'">About</a></li>
+                    <li><a href="#" @click.prevent="currentPage = 'members'" class="highlight">Members Area</a></li>
+                    <li v-if="!isLoggedIn"><a href="#" @click.prevent="showLoginModal = true">Login</a></li>
+                    <li v-if="isLoggedIn"><a href="#" @click.prevent="logout">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
 
-<section id="projects">
-    <h2>My Projects</h2>
-    <div class="project-list">
-        <div class="project">
-            <h3>Game Title 1</h3>
-            <p>Description of the game.</p>
+        <main>
+            <!-- Home Page -->
+            <section v-if="currentPage === 'home'" class="home-page">
+                <div class="hero">
+                    <h2>Welcome to PeskyDev</h2>
+                    <p>Creating fun and engaging games for everyone</p>
+                    <button @click="currentPage = 'games'" class="cta-button">Check Out My Games</button>
+                </div>
+                
+                <div class="latest-news">
+                    <h3>Latest News</h3>
+                    <div class="news-card">
+                        <h4>New Game Coming Soon!</h4>
+                        <p>Stay tuned for my latest creation, launching next month.</p>
+                        <span class="date">June 15, 2023</span>
+                    </div>
+                    <div class="news-card">
+                        <h4>Website Launch</h4>
+                        <p>Welcome to the official PeskyDev website!</p>
+                        <span class="date">June 1, 2023</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Games Page -->
+            <section v-if="currentPage === 'games'" class="games-page">
+                <h2>My Games</h2>
+                <div class="games-container">
+                    <div class="game-feature">
+                        <h3>Trawlers Empire</h3>
+                        <p>My latest release on Steam - a fishing trawler management simulation game!</p>
+                        <div class="steam-widget">
+                            <iframe src="https://store.steampowered.com/widget/3389450/" frameborder="0" width="100%" height="190"></iframe>
+                        </div>
+                    </div>
+                    <div id="other-games"></div>
+                </div>
+            </section>
+
+            <!-- About Page -->
+            <section v-if="currentPage === 'about'" class="about-page">
+                <h2>About PeskyDev</h2>
+                <div class="about-content">
+                    <div class="dev-profile">
+                        <svg width="150" height="150" viewBox="0 0 150 150">
+                            <circle cx="75" cy="75" r="75" fill="#7289da" />
+                            <circle cx="75" cy="60" r="25" fill="#ffffff" />
+                            <path d="M40 110 Q 75 150 110 110" fill="#ffffff" />
+                        </svg>
+                        <h3>Jafet Egill Jafetsson</h3>
+                        <p>Solo Game Developer</p>
+                    </div>
+                    <div class="about-text">
+                        <p>Hello! I'm the developer behind PeskyDev. I've been passionate about creating games since I was 16, when I first started coding with HTML5, JavaScript, and CSS.</p>
+                        <p>I'm currently 18 years old (turning 19 in May) and am a student at Fjölbrautaskólinn í Garðabæ, where I started making my first games.</p>
+                        <p>When I'm not coding or making games, I enjoy taking walks, watching YouTube shorts, and browsing Instagram and Facebook reels. I'm also working on growing my YouTube channel as a content creator.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Members Area -->
+            <section v-if="currentPage === 'members'" class="members-page">
+                <div v-if="!isLoggedIn" class="login-prompt">
+                    <h2>Members Area</h2>
+                    <p>Please log in or create an account to access the members area.</p>
+                    <div class="auth-buttons">
+                        <button @click="showLoginModal = true" class="login-btn">Login</button>
+                        <button @click="showRegisterModal = true" class="register-btn">Create Account</button>
+                    </div>
+                </div>
+                
+                <div v-if="isLoggedIn" class="members-content">
+                    <h2>Welcome to the Members Area, {{ currentUser.username }}!</h2>
+                    
+                    <div class="members-tabs">
+                        <button :class="{ 'active': activeTab === 'forum' }" @click="activeTab = 'forum'">Forum</button>
+                        <button :class="{ 'active': activeTab === 'feedback' }" @click="activeTab = 'feedback'">Feedback</button>
+                        <button :class="{ 'active': activeTab === 'suggestions' }" @click="activeTab = 'suggestions'">Game Suggestions</button>
+                    </div>
+                    
+                    <!-- Forum Tab -->
+                    <div v-if="activeTab === 'forum'" class="forum-section">
+                        <h3>Community Forum</h3>
+                        
+                        <div class="forum-posts">
+                            <div v-for="post in forumPosts" :key="post.id" class="forum-post">
+                                <div class="post-header">
+                                    <span class="post-author">{{ post.author }}</span>
+                                    <span class="post-date">{{ post.date }}</span>
+                                </div>
+                                <div class="post-title">{{ post.title }}</div>
+                                <div class="post-content">{{ post.content }}</div>
+                                <div class="post-replies">
+                                    <div v-for="reply in post.replies" :key="reply.id" class="post-reply">
+                                        <div class="reply-header">
+                                            <span class="reply-author">{{ reply.author }}</span>
+                                            <span class="reply-date">{{ reply.date }}</span>
+                                        </div>
+                                        <div class="reply-content">{{ reply.content }}</div>
+                                    </div>
+                                </div>
+                                <div class="reply-form">
+                                    <textarea v-model="replyContent[post.id]" placeholder="Write a reply..."></textarea>
+                                    <button @click="addReply(post.id)">Reply</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="new-post-form">
+                            <h4>Create a New Post</h4>
+                            <input v-model="newPost.title" placeholder="Post Title" type="text" />
+                            <textarea v-model="newPost.content" placeholder="Post Content..."></textarea>
+                            <button @click="addForumPost">Submit Post</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback Tab -->
+                    <div v-if="activeTab === 'feedback'" class="feedback-section">
+                        <h3>Submit Feedback</h3>
+                        <p>Your feedback helps me improve! Send your thoughts directly to my support team.</p>
+                        
+                        <div class="feedback-form">
+                            <input v-model="feedback.title" placeholder="Subject" type="text" />
+                            <select v-model="feedback.type">
+                                <option value="bug">Bug Report</option>
+                                <option value="improvement">Improvement Suggestion</option>
+                                <option value="question">Question</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <textarea v-model="feedback.content" placeholder="Describe your feedback in detail..."></textarea>
+                            <button @click="submitFeedback">Submit Feedback</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Game Suggestions Tab -->
+                    <div v-if="activeTab === 'suggestions'" class="suggestions-section">
+                        <h3>Game Feature Suggestions</h3>
+                        <p>Have an idea for one of my games? Let me know!</p>
+                        
+                        <div class="game-selector">
+                            <label for="game-select">Select Game:</label>
+                            <select id="game-select" v-model="suggestion.game">
+                                <option value="pixel-adventure">Pixel Adventure</option>
+                                <option value="space-blaster">Space Blaster</option>
+                                <option value="puzzle-master">Puzzle Master</option>
+                            </select>
+                        </div>
+                        
+                        <div class="suggestion-form">
+                            <input v-model="suggestion.title" placeholder="Feature Name" type="text" />
+                            <textarea v-model="suggestion.description" placeholder="Describe your feature idea in detail..."></textarea>
+                            <button @click="submitSuggestion">Submit Suggestion</button>
+                        </div>
+                        
+                        <div class="public-suggestions">
+                            <h4>Community Suggestions</h4>
+                            <div v-for="sugg in gameSuggestions" :key="sugg.id" class="suggestion-card">
+                                <div class="suggestion-header">
+                                    <span class="suggestion-game">{{ sugg.game }}</span>
+                                    <span class="suggestion-author">by {{ sugg.author }}</span>
+                                    <span class="suggestion-date">{{ sugg.date }}</span>
+                                </div>
+                                <div class="suggestion-title">{{ sugg.title }}</div>
+                                <div class="suggestion-desc">{{ sugg.description }}</div>
+                                <div class="suggestion-votes">
+                                    <button @click="upvoteSuggestion(sugg.id)" :disabled="hasVoted(sugg.id)">
+                                        👍 {{ sugg.upvotes }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Login Modal -->
+        <div v-if="showLoginModal" class="modal">
+            <div class="modal-content">
+                <span class="close" @click="showLoginModal = false">&times;</span>
+                <h3>Login</h3>
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input id="login-username" v-model="loginForm.username" type="text" placeholder="Username">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input id="login-password" v-model="loginForm.password" type="password" placeholder="Password">
+                </div>
+                <div class="form-actions">
+                    <button @click="login">Login</button>
+                    <button @click="showLoginModal = false; showRegisterModal = true">Register Instead</button>
+                </div>
+                <p v-if="loginError" class="error-message">{{ loginError }}</p>
+            </div>
         </div>
-        <div class="project">
-            <h3>Game Title 2</h3>
-            <p>Description of the game.</p>
+
+        <!-- Register Modal -->
+        <div v-if="showRegisterModal" class="modal">
+            <div class="modal-content">
+                <span class="close" @click="showRegisterModal = false">&times;</span>
+                <h3>Create Account</h3>
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input id="register-username" v-model="registerForm.username" type="text" placeholder="Username">
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input id="register-email" v-model="registerForm.email" type="email" placeholder="Email">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input id="register-password" v-model="registerForm.password" type="password" placeholder="Password">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm">Confirm Password</label>
+                    <input id="register-confirm" v-model="registerForm.confirmPassword" type="password" placeholder="Confirm Password">
+                </div>
+                <div class="form-actions">
+                    <button @click="register">Create Account</button>
+                    <button @click="showRegisterModal = false; showLoginModal = true">Login Instead</button>
+                </div>
+                <p v-if="registerError" class="error-message">{{ registerError }}</p>
+            </div>
         </div>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <svg width="30" height="30" viewBox="0 0 40 40">
+                        <path d="M20 5L30 10L30 20L20 25L10 20L10 10L20 5Z" fill="#7289da" />
+                        <path d="M20 5L30 10L20 15L10 10L20 5Z" fill="#9baae8" />
+                        <circle cx="20" cy="15" r="3" fill="#ffffff" />
+                        <rect x="16" y="20" width="8" height="8" rx="2" fill="#ffffff" />
+                    </svg>
+                    <span>PeskyDev</span>
+                </div>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="/cdn-cgi/l/email-protection#0a797f7a7a65787e4a7a6f7961736e6f7c24696567">Contact</a>
+                </div>
+                <div class="social-links">
+                    <a href="#" class="social-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="social-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="social-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2023 PeskyDev. All rights reserved.
+            </div>
+        </footer>
     </div>
-</section>
-
-<section id="blog">
-    <h2>Developer Blog</h2>
-    <div id="blog-posts"></div>
-    <h3>Write a New Blog Post</h3>
-    <textarea id="editor"></textarea>
-    <button onclick="publishPost()">Publish</button>
-</section>
-
-<section id="contact">
-    <h2>Contact Me</h2>
-    <p>Email: <a href="mailto:largefort@gmail.com">largefort@gmail.com</a></p>
-</section>
-
-<footer>
-    <p>&copy; 2025 PeskyDev. All rights reserved.</p>
-</footer>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const easyMDE = new EasyMDE({ element: document.getElementById("editor") });
-        const converter = new showdown.Converter();
-        
-        function fetchBlogPosts() {
-            fetch("https://your-strapi-url.com/api/blogs")
-                .then(response => response.json())
-                .then(data => {
-                    const blogContainer = document.getElementById("blog-posts");
-                    blogContainer.innerHTML = "";
-                    data.forEach(post => {
-                        const htmlContent = converter.makeHtml(post.content);
-                        blogContainer.innerHTML += `<div class='blog-post'><h3>${post.title}</h3>${htmlContent}</div>`;
-                    });
-                });
-        }
-        
-        function publishPost() {
-            const content = easyMDE.value();
-            fetch("https://your-strapi-url.com/api/blogs", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: "New Post", content: content })
-            }).then(() => fetchBlogPosts());
-        }
-        
-        fetchBlogPosts();
-    });
-</script>
-
+    
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module" src="app.js"></script>
 </body>
 </html>
